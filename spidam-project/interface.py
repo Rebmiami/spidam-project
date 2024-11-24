@@ -16,7 +16,11 @@ root = tk.Tk()
 root.wm_title("Audio Analysis")
 
 fig = Figure(figsize=(8, 6))
-t = linspace(0, 2, 1000)
+try:
+    t = linspace(0, audio_duration, 1000)
+except Exception as audio_duration:
+    #Defaults to 2 seconds if audio_duration has no assigned value
+    t = linspace(0, 2, 1000)
 
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.draw()
@@ -28,7 +32,7 @@ sampling_rate = None
 
 def load_audio_file():
     """Loads an audio file and displays its waveform."""
-    global audio_data, sampling_rate
+    global audio_data, sampling_rate, audio_duration
     file_path = filedialog.askopenfilename(
         title="Select Audio File",
         filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*"))
@@ -39,9 +43,12 @@ def load_audio_file():
     try:
         # Load the audio file using librosa
         audio_data, sampling_rate = librosa.load(file_path, sr=None)
+        audio_duration = librosa.get_duration(y=audio_data, sr=sampling_rate, n_fft=1024, hop_length=1024, center=True, path=file_path)
+
         display_waveform()
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load audio file: {e}")
+
 
 def display_waveform():
     """Displays the waveform of the loaded audio."""
