@@ -5,6 +5,9 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import librosa
 import librosa.display
+import matplotlib.pyplot as plt
+from librosa import feature
+from librosa import core
 import numpy as np
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -16,11 +19,8 @@ root = tk.Tk()
 root.wm_title("Audio Analysis")
 
 fig = Figure(figsize=(8, 6))
-try:
-    t = linspace(0, audio_duration, 1000)
-except Exception as audio_duration:
-    #Defaults to 2 seconds if audio_duration has no assigned value
-    t = linspace(0, 2, 1000)
+t = linspace(0, 2, 1000)
+
 
 canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.draw()
@@ -65,6 +65,21 @@ def display_waveform():
     ax.set_ylabel("Amplitude")
     canvas.draw()
 
+def display_spectrogram():
+    if audio_data is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
+
+    fig.clear()
+    ax = fig.add_subplot()
+    spec = librosa.feature.melspectrogram(y=audio_data, sr=sampling_rate, n_fft=1024, hop_length=1024, center=False)
+    librosa.display.specshow(data=spec, ax=ax)
+    ax.set_title("Waveform")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    canvas.draw()
+
+
 # Add buttons for GUI interactions
 load_button = tk.Button(master=root, text="Load Audio File", command=load_audio_file)
 load_button.pack(side=tk.LEFT)
@@ -86,6 +101,12 @@ def _change_graph_3():
     fig.clear()
     fig.add_subplot().plot(t, exp(t))
     canvas.draw()
+
+buttonHist = tk.Button(master=root, text="Histogram", command=display_waveform)
+buttonHist.pack(side=tk.LEFT)
+
+buttonLFTest = tk.Button(master=root, text="MEL Spectrogram", command=display_spectrogram)
+buttonLFTest.pack(side=tk.LEFT)
 
 button1 = tk.Button(master=root, text="Graph 1", command=_change_graph_1)
 button1.pack(side=tk.LEFT)
