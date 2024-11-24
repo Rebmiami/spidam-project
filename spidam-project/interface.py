@@ -72,11 +72,14 @@ def display_spectrogram():
 
     fig.clear()
     ax = fig.add_subplot()
+
     spec = librosa.feature.melspectrogram(y=audio_data, sr=sampling_rate, n_fft=1024, hop_length=1024, center=False)
-    librosa.display.specshow(data=spec, ax=ax)
-    ax.set_title("Waveform")
+    mel = librosa.display.specshow(data=librosa.amplitude_to_db(spec, ref=np.max), y_axis='linear', x_axis='time', ax=ax, cmap='inferno')
+    plt.colorbar(mel, ax=ax, label='Decibels', shrink=0.5)
+
+    ax.set_title("Spectrogram")
     ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude")
+    ax.set_ylabel("Frequency (Hz)")
     canvas.draw()
 
 
@@ -102,7 +105,7 @@ def _change_graph_3():
     fig.add_subplot().plot(t, exp(t))
     canvas.draw()
 
-buttonHist = tk.Button(master=root, text="Histogram", command=display_waveform)
+buttonHist = tk.Button(master=root, text="Waveform", command=display_waveform)
 buttonHist.pack(side=tk.LEFT)
 
 buttonLFTest = tk.Button(master=root, text="MEL Spectrogram", command=display_spectrogram)
