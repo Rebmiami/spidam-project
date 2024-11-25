@@ -29,6 +29,7 @@ audio_samples = None
 sampling_rate = None
 
 def load_audio_file():
+    update_status("Awaiting file. ")
     """Loads an audio file and displays its waveform."""
     global audio_data, audio_samples, sampling_rate, audio_duration
     file_path = filedialog.askopenfilename(
@@ -36,6 +37,7 @@ def load_audio_file():
         filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*")),
         initialdir="./audio")
     if not file_path:
+        update_status("File selection canceled. ")
         return  # User cancelled the file dialog
 
     # Attempt to load the file
@@ -47,10 +49,11 @@ def load_audio_file():
         sampling_rate = data._sampling_rate
         audio_duration = analysis.get_duration(data, file_path)
         display_waveform()
+        update_status("File loaded successfully. ")
     else:
         # Otherwise, show an error message
         messagebox.showerror("Error", f"Failed to load audio file: {error}")
-
+        update_status("File loading failed")
 
 def display_waveform():
     """Displays the waveform of the loaded audio."""
@@ -66,6 +69,7 @@ def display_waveform():
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
     canvas.draw()
+    update_status("Finished drawing waveform. ")
 
 def display_spectrogram():
     if audio_samples is None:
@@ -86,19 +90,31 @@ def display_spectrogram():
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
     canvas.draw()
+    update_status("Finished drawing spectrogram. ")
 
+status_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
+status_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+status_label = tk.Label(master=status_frame, text="Ready")
+status_label.pack(side=tk.LEFT)
+
+def update_status(message):
+    status_label.config(text=message)
+
+control_frame = tk.Frame(master=root)
+control_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
 # Add buttons for GUI interactions
-load_button = tk.Button(master=root, text="Load Audio File", command=load_audio_file)
+load_button = tk.Button(master=control_frame, text="Load Audio File", command=load_audio_file)
 load_button.pack(side=tk.LEFT)
 
-exit_button = tk.Button(master=root, text="Exit", command=root.quit)
+exit_button = tk.Button(master=control_frame, text="Exit", command=root.quit)
 exit_button.pack(side=tk.RIGHT)
 
-buttonHist = tk.Button(master=root, text="Waveform", command=display_waveform)
+buttonHist = tk.Button(master=control_frame, text="Waveform", command=display_waveform)
 buttonHist.pack(side=tk.LEFT)
 
-buttonLFTest = tk.Button(master=root, text="MEL Spectrogram", command=display_spectrogram)
+buttonLFTest = tk.Button(master=control_frame, text="MEL Spectrogram", command=display_spectrogram)
 buttonLFTest.pack(side=tk.LEFT)
 
 tk.mainloop()
