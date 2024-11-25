@@ -94,34 +94,10 @@ load_button.pack(side=tk.LEFT)
 exit_button = tk.Button(master=root, text="Exit", command=root.quit)
 exit_button.pack(side=tk.RIGHT)
 
-def _change_graph_1():
-    fig.clear()
-    fig.add_subplot().plot(t, 2 * sin(2 * pi * t))
-    canvas.draw()
-
-def _change_graph_2():
-    fig.clear()
-    fig.add_subplot().plot(t, t % 1)
-    canvas.draw()
-
-def _change_graph_3():
-    fig.clear()
-    fig.add_subplot().plot(t, exp(t))
-    canvas.draw()
-
 buttonHist = tk.Button(master=root, text="Waveform", command=display_waveform)
 buttonHist.pack(side=tk.LEFT)
 
 buttonLFTest = tk.Button(master=root, text="MEL Spectrogram", command=display_spectrogram)
 buttonLFTest.pack(side=tk.LEFT)
-
-button1 = tk.Button(master=root, text="Test Graph 1", command=_change_graph_1)
-button1.pack(side=tk.LEFT)
-
-button2 = tk.Button(master=root, text="Test Graph 2", command=_change_graph_2)
-button2.pack(side=tk.LEFT)
-
-button3 = tk.Button(master=root, text="Test Graph 3", command=_change_graph_3)
-button3.pack(side=tk.LEFT)
 
 tk.mainloop()
