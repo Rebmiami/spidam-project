@@ -1,6 +1,7 @@
 import loading
 import analysis
 import tkinter as tk
+import matplotlib.pyplot as plt
 
 from numpy import *
 from librosa import display
@@ -21,13 +22,14 @@ canvas.draw()
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 # Variable to store the loaded audio
-# Todo: Store an AudioData object here directly?
+audio_data = None
+# Todo: Replace remaining invocations of the below variables
 audio_samples = None
 sampling_rate = None
 
 def load_audio_file():
     """Loads an audio file and displays its waveform."""
-    global audio_samples, sampling_rate, audio_duration
+    global audio_data, audio_samples, sampling_rate, audio_duration
     file_path = tk.filedialog.askopenfilename(
         title="Select Audio File",
         filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*"))
@@ -39,6 +41,7 @@ def load_audio_file():
     success, data, error = loading.load_file(file_path)
     if success:
         # If successful, display the waveform
+        audio_data = data
         audio_samples = data._audio_samples
         sampling_rate = data._sampling_rate
         audio_duration = analysis.get_duration(data, file_path)
@@ -71,8 +74,8 @@ def display_spectrogram():
     fig.clear()
     ax = fig.add_subplot()
 
-    spec = analysis.get_spectrogram()
-    mel = display.specshow(data=librosa.amplitude_to_db(spec, ref=max), y_axis='linear', x_axis='time', ax=ax, cmap='inferno')
+    spec = analysis.get_spectrogram(audio_data)
+    mel = display.specshow(data=analysis.amplitude_to_db(spec), y_axis='linear', x_axis='time', ax=ax, cmap='inferno')
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.1)
