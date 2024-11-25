@@ -1,11 +1,12 @@
 import loading
 import analysis
 import tkinter as tk
-import matplotlib.pyplot as plt
+from tkinter import filedialog, messagebox
 
 from numpy import *
 from librosa import display
 
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -30,10 +31,10 @@ sampling_rate = None
 def load_audio_file():
     """Loads an audio file and displays its waveform."""
     global audio_data, audio_samples, sampling_rate, audio_duration
-    file_path = tk.filedialog.askopenfilename(
+    file_path = filedialog.askopenfilename(
         title="Select Audio File",
-        filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*"))
-    )
+        filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*")),
+        initialdir="./audio")
     if not file_path:
         return  # User cancelled the file dialog
 
@@ -48,13 +49,13 @@ def load_audio_file():
         display_waveform()
     else:
         # Otherwise, show an error message
-        tk.messagebox.showerror("Error", f"Failed to load audio file: {error}")
+        messagebox.showerror("Error", f"Failed to load audio file: {error}")
 
 
 def display_waveform():
     """Displays the waveform of the loaded audio."""
     if audio_samples is None:
-        tk.messagebox.showwarning("Warning", "No audio file loaded.")
+        messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
     # Clear the previous figure and plot the waveform
@@ -68,7 +69,7 @@ def display_waveform():
 
 def display_spectrogram():
     if audio_samples is None:
-        tk.messagebox.showwarning("Warning", "No audio file loaded.")
+        messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
     fig.clear()
