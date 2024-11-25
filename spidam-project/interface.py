@@ -91,7 +91,22 @@ def display_spectrogram():
     ax.set_ylabel("Frequency (Hz)")
     canvas.draw()
     update_status("Finished drawing spectrogram. ")
+def display_rt60_analysis():
+    """Displays RT60 values for different frequency bands."""
+    if audio_samples is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
 
+    rt60_values = analysis.compute_rt60(audio_samples, sampling_rate)
+    fig.clear()
+    ax = fig.add_subplot()
+    ax.bar(["Low", "Mid", "High"], rt60_values, color=['blue', 'green', 'red'])
+    ax.set_title("RT60 Analysis")
+    ax.set_xlabel("Frequency Band")
+    ax.set_ylabel("RT60 (seconds)")
+    canvas.draw()
+    update_status("RT60 Analysis Complete")
+    
 status_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 status_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -116,5 +131,8 @@ buttonHist.pack(side=tk.LEFT)
 
 buttonLFTest = tk.Button(master=control_frame, text="MEL Spectrogram", command=display_spectrogram)
 buttonLFTest.pack(side=tk.LEFT)
+
+buttonRT60 = tk.Button(master=control_frame, text="RT60 Analysis", command=display_rt60_analysis)
+buttonRT60.pack(side=tk.LEFT)
 
 tk.mainloop()

@@ -11,3 +11,27 @@ def get_spectrogram(data):
 
 def amplitude_to_db(spec):
     return librosa.amplitude_to_db(spec, ref=np.max)
+
+import numpy as np
+from scipy.signal import fftconvolve
+
+def compute_rt60(audio_samples, sampling_rate):
+    """Compute RT60 using the Schroeder method."""
+    # Create a Room Impulse Response (simplified for this demo)
+    rir = fftconvolve(audio_samples, audio_samples[::-1])
+    rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow
+
+    energy = rir[::-1].cumsum()[::-1]  # Schroeder's integral
+    energy = np.maximum(energy, 1e-10)  # Avoid zeros to prevent log10 issues
+
+    energy_db = 10 * np.log10(energy / np.max(energy))
+
+    # Find the indices for -5 dB and -35 dB (equivalent to -60 dB total)
+    try:
+        idx_5db = np.where(energy_db <= -5)[0][0]
+        idx_35db = np.where(energy_db <= -35)[0][0]
+        rt60 = (idx_35db - idx_5db) / sampling_rate
+    except IndexError:
+        rt60 = float('nan')  # If indices are not found, return NaN
+
+    return rt60
