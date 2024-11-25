@@ -12,6 +12,7 @@ import numpy as np
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from numpy import *
 
@@ -75,7 +76,10 @@ def display_spectrogram():
 
     spec = librosa.feature.melspectrogram(y=audio_data, sr=sampling_rate, n_fft=1024, hop_length=1024, center=False)
     mel = librosa.display.specshow(data=librosa.amplitude_to_db(spec, ref=np.max), y_axis='linear', x_axis='time', ax=ax, cmap='inferno')
-    plt.colorbar(mel, ax=ax, label='Decibels', shrink=0.5)
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.1)
+    plt.colorbar(mel, cax=cax, label='Decibels', shrink=0.5, fraction=0.046, pad=0.04)
 
     ax.set_title("Spectrogram")
     ax.set_xlabel("Time (s)")
