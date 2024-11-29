@@ -11,6 +11,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from analysis import get_rt60_diff
+
 root = tk.Tk()
 root.wm_title("Audio Analysis")
 
@@ -132,10 +134,7 @@ def display_summary(duration, resonance, rt60):
         duration_text = str(min) + ":" + str(round(sec, 3))
 
     #Calculate rt60 difference
-    if(rt60 > 0.5):
-        rt60_diff = "+" + str(round(rt60 - 0.5, 2))
-    else:
-        rt60_diff = str(round(rt60, 2))
+    rt60_diff = get_rt60_diff(rt60)
 
     summary_text.config(text="Duration: " + duration_text + " | Resonance: " + str(round(resonance, 2)) +
                              " | RT60 Difference vs. .5 Seconds: " + rt60_diff)

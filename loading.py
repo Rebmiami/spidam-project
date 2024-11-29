@@ -19,16 +19,12 @@ def load_file(file_path):
         if ext == 'mp3':
             # If file is a mp3, convert to wav
 
-            ## This code currently causes an error where the program says it can't open the file it's trying to write
-            ## Until this is fixed, the wav file can only be written to the same folder as interface.py
-            #root_pkg_name, _, _ = __name__.partition('.')
-            #root_pkg_module = sys.modules[root_pkg_name]
-            #root_pkg_dirname = os.path.dirname(root_pkg_module.__file__)
-            #path = os.path.join(root_pkg_dirname, "audio", "converted_to_wav.wav")
-            #sf.write(path, audio_samples, sampling_rate)
-            ##
+            root_pkg_name, _, _ = __name__.partition('.')
+            root_pkg_module = sys.modules[root_pkg_name]
+            root_pkg_dirname = os.path.dirname(root_pkg_module.__file__)
+            path = os.path.join(root_pkg_dirname, "audio", "converted_to_wav.wav")
+            sf.write(path, audio_samples, sampling_rate)
 
-            sf.write("converted_to_wav.wav", audio_samples, sampling_rate)
         # Return AudioData class
         return True, AudioData(audio_samples, sampling_rate), None
     except Exception as e:

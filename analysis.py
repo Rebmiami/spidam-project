@@ -42,3 +42,10 @@ def get_resonance(data, sr):
     frequencies, power = welch(data, sr, nperseg=4096)
     dominant_frequency = frequencies[np.argmax(power)]
     return dominant_frequency
+
+def get_rt60_diff(rt60):
+    if (rt60 > 0.5):
+        rt60_diff = "+" + str(round(rt60 - 0.5, 2))
+    else:
+        rt60_diff = str(round(rt60 - 0.5, 2))
+    return rt60_diff
