@@ -11,7 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from analysis import get_rt60_diff
+from analysis import get_rt60_diff, compute_rt60
 
 root = tk.Tk()
 root.wm_title("Audio Analysis")
@@ -105,13 +105,19 @@ def display_rt60_analysis():
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
-    rt60_values = analysis.compute_rt60(audio_samples, sampling_rate)
+    # Compute RT60 for low, mid, and high frequency bands
+    rt60_values = compute_rt60(audio_samples, sampling_rate)  # Assuming compute_rt60 is already defined
+
+    # Clear the previous figure and set up the bar chart
     fig.clear()
-    ax = fig.add_subplot()
+    ax = fig.add_subplot(1, 1, 1)
     ax.bar(["Low", "Mid", "High"], rt60_values, color=['blue', 'green', 'red'])
     ax.set_title("RT60 Analysis")
     ax.set_xlabel("Frequency Band")
     ax.set_ylabel("RT60 (seconds)")
+    ax.set_ylim(0, max(rt60_values) * 1.2)  # Add some padding to the y-axis
+
+    # Update the canvas to display the new graph
     canvas.draw()
     update_status("RT60 Analysis Complete")
 
@@ -133,11 +139,26 @@ def display_summary(duration, resonance, rt60):
     else:
         duration_text = str(min) + ":" + str(round(sec, 3))
 
-    #Calculate rt60 difference
-    rt60_diff = get_rt60_diff(rt60)
+    # Calculate RT60 differences for all three bands
+    rt60_diff = []
+    for value in rt60:  # rt60 is assumed to be a tuple (low_rt60, mid_rt60, high_rt60)
+        if value > 0.5:
+            diff = "+" + str(round(value - 0.5, 2))
+        else:
+            diff = str(round(value - 0.5, 2))  # Explicitly show negative difference
+        rt60_diff.append(diff)
 
-    summary_text.config(text="Duration: " + duration_text + " | Resonance: " + str(round(resonance, 2)) +
-                             " | RT60 Difference vs. .5 Seconds: " + rt60_diff)
+    # Format the differences for display
+    rt60_diff_text = f"Low: {rt60_diff[0]}, Mid: {rt60_diff[1]}, High: {rt60_diff[2]}"
+
+    # Update the summary text
+    summary_text.config(
+        text=(
+            f"Duration: {duration_text} | "
+            f"Resonance: {round(resonance, 2)} | "
+            f"RT60 Differences vs. 0.5 Seconds: {rt60_diff_text}"
+        )
+    )
 
 status_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 status_frame.pack(side=tk.BOTTOM, fill=tk.X)
