@@ -11,6 +11,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from analysis import get_rt60_diff
+
 root = tk.Tk()
 root.wm_title("Audio Analysis")
 
@@ -48,7 +50,12 @@ def load_audio_file():
         audio_samples = data._audio_samples
         sampling_rate = data._sampling_rate
         audio_duration = analysis.get_duration(data, file_path)
+        audio_resonance = analysis.get_resonance(audio_samples, sampling_rate)
+        rt60 = analysis.compute_rt60(audio_samples, sampling_rate)
         display_waveform()
+
+        # RT60 difference value is temporary
+        display_summary(audio_duration, audio_resonance, rt60)
         update_status("File loaded successfully. ")
     else:
         # Otherwise, show an error message
@@ -91,6 +98,7 @@ def display_spectrogram():
     ax.set_ylabel("Frequency (Hz)")
     canvas.draw()
     update_status("Finished drawing spectrogram. ")
+
 def display_rt60_analysis():
     """Displays RT60 values for different frequency bands."""
     if audio_samples is None:
@@ -106,7 +114,31 @@ def display_rt60_analysis():
     ax.set_ylabel("RT60 (seconds)")
     canvas.draw()
     update_status("RT60 Analysis Complete")
-    
+
+summary_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
+summary_frame.pack(side=tk.TOP, fill=tk.X)
+
+summary_text = tk.Label(master=summary_frame, text="Audio must be loaded before summary can be displayed.")
+summary_text.pack(side=tk.BOTTOM)
+
+def display_summary(duration, resonance, rt60):
+    # Convert duration to min:sec format
+    sec = duration
+    min = 0
+    while sec >= 60:
+        min+=1
+        sec -= 60
+    if sec < 10:
+        duration_text = str(min) + ":0" + str(round(sec, 3))
+    else:
+        duration_text = str(min) + ":" + str(round(sec, 3))
+
+    #Calculate rt60 difference
+    rt60_diff = get_rt60_diff(rt60)
+
+    summary_text.config(text="Duration: " + duration_text + " | Resonance: " + str(round(resonance, 2)) +
+                             " | RT60 Difference vs. .5 Seconds: " + rt60_diff)
+
 status_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 status_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -115,6 +147,7 @@ status_label.pack(side=tk.LEFT)
 
 def update_status(message):
     status_label.config(text=message)
+
 
 control_frame = tk.Frame(master=root)
 control_frame.pack(side=tk.BOTTOM, fill=tk.X)

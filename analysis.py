@@ -1,6 +1,7 @@
 import librosa
 import audiodata
 import numpy as np
+
 # Todo: Remove magic numbers
 
 def get_duration(data, file_path):
@@ -14,6 +15,7 @@ def amplitude_to_db(spec):
 
 import numpy as np
 from scipy.signal import fftconvolve
+from scipy.signal import welch
 
 def compute_rt60(audio_samples, sampling_rate):
     """Compute RT60 using the Schroeder method."""
@@ -35,3 +37,15 @@ def compute_rt60(audio_samples, sampling_rate):
         rt60 = float('nan')  # If indices are not found, return NaN
 
     return rt60
+
+def get_resonance(data, sr):
+    frequencies, power = welch(data, sr, nperseg=4096)
+    dominant_frequency = frequencies[np.argmax(power)]
+    return dominant_frequency
+
+def get_rt60_diff(rt60):
+    if (rt60 > 0.5):
+        rt60_diff = "+" + str(round(rt60 - 0.5, 2))
+    else:
+        rt60_diff = str(round(rt60 - 0.5, 2))
+    return rt60_diff
