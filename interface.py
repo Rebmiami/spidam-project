@@ -264,34 +264,36 @@ exit_button.pack(side=tk.RIGHT)
 buttonHist = tk.Button(master=control_frame, text="Waveform", command=display_waveform)
 buttonHist.pack(side=tk.LEFT)
 
+buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
+buttonFiltered.pack(side=tk.LEFT)
+
 buttonLFTest = tk.Button(master=control_frame, text="MEL Spectrogram", command=display_spectrogram)
 buttonLFTest.pack(side=tk.LEFT)
 
 buttonRT60 = tk.Button(master=control_frame, text="RT60 Analysis", command=display_rt60_analysis)
 buttonRT60.pack(side=tk.LEFT)
 
-buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
-buttonFiltered.pack(side=tk.LEFT)
-
 # These 3 options should be removed or hidden in the final version
+showDebug = False
 
-def updateDebugSliderLabel(nval):
-    sliderRT60Debug.config(label=["RIR", "E", "E(db)"][sliderRT60Debug.get()])
+if showDebug:
+    def updateDebugSliderLabel(nval):
+        sliderRT60Debug.config(label=["RIR", "E", "E(db)"][sliderRT60Debug.get()])
 
-sliderRT60Debug = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateDebugSliderLabel)
-sliderRT60Debug.pack(side=tk.LEFT)
+    sliderRT60Debug = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateDebugSliderLabel)
+    sliderRT60Debug.pack(side=tk.LEFT)
 
-updateDebugSliderLabel(None)
+    updateDebugSliderLabel(None)
 
-def updateBandSliderLabel(nval):
-    sliderRT60Band.config(label=["High", "Med", "Low"][sliderRT60Band.get()])
+    def updateBandSliderLabel(nval):
+        sliderRT60Band.config(label=["High", "Med", "Low"][sliderRT60Band.get()])
 
-sliderRT60Band = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateBandSliderLabel)
-sliderRT60Band.pack(side=tk.LEFT)
+    sliderRT60Band = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateBandSliderLabel)
+    sliderRT60Band.pack(side=tk.LEFT)
 
-updateBandSliderLabel(None)
+    updateBandSliderLabel(None)
 
-buttonRT60Debug = tk.Button(master=control_frame, text="RT60 Debug", command=display_impulse_response)
-buttonRT60Debug.pack(side=tk.LEFT)
+    buttonRT60Debug = tk.Button(master=control_frame, text="RT60 Debug", command=display_impulse_response)
+    buttonRT60Debug.pack(side=tk.LEFT)
 
 tk.mainloop()
