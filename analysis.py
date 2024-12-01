@@ -32,7 +32,7 @@ def compute_rt60_band(audio_samples, sampling_rate):
     rir = fftconvolve(audio_samples, audio_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
     rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow. (calculation so the minimum value is one)
 
-    energy = (rir[::-1]**2)[::-1].cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
+    energy = (np.square(rir[::-1]))[::-1].cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
     energy = np.maximum(energy, 1e-10)  # Avoid zero values by setting a floor at 1e - 10
 
     energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))  # Convert energy to dB scale.
