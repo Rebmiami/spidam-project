@@ -11,8 +11,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from analysis import get_rt60_diff, compute_rt60
-
 root = tk.Tk()
 root.wm_title("Audio Analysis")
 
@@ -26,14 +24,12 @@ canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 # Variable to store the loaded audio
 audio_data = None
-# Todo: Replace remaining invocations of the below variables
-audio_samples = None
-sampling_rate = None
+
 
 def load_audio_file():
     update_status("Awaiting file. ")
     """Loads an audio file and displays its waveform."""
-    global audio_data, audio_samples, sampling_rate, audio_duration
+    global audio_data
     file_path = filedialog.askopenfilename(
         title="Select Audio File",
         filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*")),
@@ -47,15 +43,10 @@ def load_audio_file():
     if success:
         # If successful, display the waveform
         audio_data = data
-        audio_samples = data._audio_samples
-        sampling_rate = data._sampling_rate
-        audio_duration = analysis.get_duration(data, file_path)
-        audio_resonance = analysis.get_resonance(audio_samples, sampling_rate)
-        rt60 = analysis.compute_rt60(audio_samples, sampling_rate)
         display_waveform()
 
         # RT60 difference value is temporary
-        display_summary(audio_duration, audio_resonance, rt60)
+        display_summary()
         update_status("File loaded successfully. ")
     else:
         # Otherwise, show an error message
@@ -64,14 +55,14 @@ def load_audio_file():
 
 def display_waveform():
     """Displays the waveform of the loaded audio."""
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
     # Clear the previous figure and plot the waveform
     fig.clear()
     ax = fig.add_subplot()
-    display.waveshow(audio_samples, sr=sampling_rate, ax=ax)
+    display.waveshow(audio_data._audio_samples, sr=audio_data._sampling_rate, ax=ax)
     ax.set_title("Waveform")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
@@ -79,7 +70,7 @@ def display_waveform():
     update_status("Finished drawing waveform. ")
 
 def display_spectrogram():
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
@@ -101,12 +92,12 @@ def display_spectrogram():
 
 def display_rt60_analysis():
     """Displays RT60 values for different frequency bands."""
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
-    # Compute RT60 for low, mid, and high frequency bands
-    rt60_values = compute_rt60(audio_samples, sampling_rate)  # Assuming compute_rt60 is already defined
+    # Retrieve RT60 for low, mid, and high frequency bands
+    rt60_values = audio_data._rt60
 
     # Clear the previous figure and set up the bar chart
     fig.clear()
@@ -119,17 +110,17 @@ def display_rt60_analysis():
 
     # Update the canvas to display the new graph
     canvas.draw()
-    update_status("RT60 Analysis Complete")
+    update_status("Finished drawing RT60 graph")
 
 summary_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 summary_frame.pack(side=tk.TOP, fill=tk.X)
 
-summary_text = tk.Label(master=summary_frame, text="Audio must be loaded before summary can be displayed.")
+summary_text = tk.Label(master=summary_frame, text="Summary will display after audio is loaded.")
 summary_text.pack(side=tk.BOTTOM)
 
-def display_summary(duration, resonance, rt60):
+def display_summary():
     # Convert duration to min:sec format
-    sec = duration
+    sec = audio_data._audio_duration
     min = 0
     while sec >= 60:
         min+=1
@@ -141,7 +132,7 @@ def display_summary(duration, resonance, rt60):
 
     # Calculate RT60 differences for all three bands
     rt60_diff = []
-    for value in rt60:  # rt60 is assumed to be a tuple (low_rt60, mid_rt60, high_rt60)
+    for value in audio_data._rt60:  # rt60 is a tuple (low_rt60, mid_rt60, high_rt60)
         if value > 0.5:
             diff = "+" + str(round(value - 0.5, 2))
         else:
@@ -154,8 +145,8 @@ def display_summary(duration, resonance, rt60):
     # Update the summary text
     summary_text.config(
         text=(
-            f"Duration: {duration_text} | "
-            f"Resonance: {round(resonance, 2)} | "
+            f"Duration: {duration_text} sec | "
+            f"Resonance: {round(audio_data._audio_resonance, 2)} Hz | "
             f"RT60 Differences vs. 0.5 Seconds: {rt60_diff_text}"
         )
     )

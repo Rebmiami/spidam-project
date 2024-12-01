@@ -5,23 +5,26 @@ from scipy.signal import welch, butter, lfilter, fftconvolve
 
 # Todo: Remove magic numbers
 
-def get_duration(data, file_path):
-    return librosa.get_duration(y=data._audio_samples, sr=data._sampling_rate, n_fft=1024, hop_length=1024, center=True, path=file_path)
+def get_duration(data):
+    """Returns duration of an AudioData object in seconds"""
+    return librosa.get_duration(y=data._audio_samples, sr=data._sampling_rate, n_fft=1024, hop_length=1024, center=True)
 
 def get_spectrogram(data):
+    """Returns a mel spectrogram of the AudioData object"""
     return librosa.feature.melspectrogram(y=data._audio_samples, sr=data._sampling_rate, n_fft=1024, hop_length=1024, center=False)
 
 def amplitude_to_db(spec):
+    """Converts a spectrogram from amplitude to decibels"""
     return librosa.amplitude_to_db(spec, ref=np.max)
 
 
-def bandpass_filter(data, lowcut, highcut, sampling_rate, order=4):
+def bandpass_filter(audio_samples, lowcut, highcut, sampling_rate, order=4):
     """Apply a bandpass filter to the data."""
     nyquist = 0.5 * sampling_rate  # Nyquist frequency is half the sampling rate.
     low = lowcut / nyquist  # Normalize low cutoff frequency.
     high = highcut / nyquist  # Normalize high cutoff frequency.
-    b, a = butter(order, [low, high], btype='band')  # Design a Butterworth bandpass filter.
-    return lfilter(b, a, data)  # Apply the filter to the input signal.
+    b, a = butter(order, [low, high], btype='bandpass')  # Design a Butterworth bandpass filter.
+    return lfilter(b, a, audio_samples)  # Apply the filter to the input signal.
 
 def compute_rt60_band(audio_samples, sampling_rate):
     """Compute RT60 using the Schroeder method for a given band."""
@@ -44,7 +47,7 @@ def compute_rt60_band(audio_samples, sampling_rate):
 
     return rt60
 
-def compute_rt60(audio_samples, sampling_rate):
+def compute_rt60(data):
     """Compute RT60 for low, mid, and high frequency bands."""
     # Define frequency bands (in Hz)
     low_band = (20, 250)
@@ -52,20 +55,20 @@ def compute_rt60(audio_samples, sampling_rate):
     high_band = (2000, 20000)
 
     # Filter the signal into bands
-    low_filtered = bandpass_filter(audio_samples, low_band[0], low_band[1], sampling_rate)
-    mid_filtered = bandpass_filter(audio_samples, mid_band[0], mid_band[1], sampling_rate)
-    high_filtered = bandpass_filter(audio_samples, high_band[0], high_band[1], sampling_rate)
+    low_filtered = bandpass_filter(data._audio_samples, low_band[0], low_band[1], data._sampling_rate)
+    mid_filtered = bandpass_filter(data._audio_samples, mid_band[0], mid_band[1], data._sampling_rate)
+    high_filtered = bandpass_filter(data._audio_samples, high_band[0], high_band[1], data._sampling_rate)
 
     # Compute RT60 for each band
-    rt60_low = compute_rt60_band(low_filtered, sampling_rate)
-    rt60_mid = compute_rt60_band(mid_filtered, sampling_rate)
-    rt60_high = compute_rt60_band(high_filtered, sampling_rate)
+    rt60_low = compute_rt60_band(low_filtered, data._sampling_rate)
+    rt60_mid = compute_rt60_band(mid_filtered, data._sampling_rate)
+    rt60_high = compute_rt60_band(high_filtered, data._sampling_rate)
 
     return rt60_low, rt60_mid, rt60_high
 
 
-def get_resonance(data, sr):
-    frequencies, power = welch(data, sr, nperseg=4096)
+def get_resonance(data):
+    frequencies, power = welch(data._audio_samples, data._sampling_rate, nperseg=4096)
     dominant_frequency = frequencies[np.argmax(power)]
     return dominant_frequency
 
