@@ -112,6 +112,39 @@ def display_rt60_analysis():
     canvas.draw()
     update_status("Finished drawing RT60 graph")
 
+def display_filtered_waveforms():
+    """Displays the waveform of the loaded audio after being run through each filter."""
+    if audio_data is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
+
+    # Clear the previous figure and plot the waveform
+    fig.clear()
+    ax = fig.add_subplot()
+
+    # TODO: This is a hacky implementation and should only be kept as long as it is needed for debugging
+
+    # Define frequency bands (in Hz)
+    low_band = (20, 250)
+    mid_band = (250, 2000)
+    high_band = (2000, 20000)
+
+    # Filter the signal into bands
+    low_filtered = analysis.bandpass_filter(audio_data._audio_samples, low_band[0], low_band[1], audio_data._sampling_rate)
+    mid_filtered = analysis.bandpass_filter(audio_data._audio_samples, mid_band[0], mid_band[1], audio_data._sampling_rate)
+    high_filtered = analysis.bandpass_filter(audio_data._audio_samples, high_band[0], high_band[1], audio_data._sampling_rate)
+
+    display.waveshow(low_filtered, sr=audio_data._sampling_rate, ax=ax, label="Low freq")
+    display.waveshow(mid_filtered, sr=audio_data._sampling_rate, ax=ax, label="Mid freq")
+    display.waveshow(high_filtered, sr=audio_data._sampling_rate, ax=ax, label="High freq")
+
+    ax.set_title("Waveform")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend(loc="lower right")
+    canvas.draw()
+    update_status("Finished drawing filtered waveforms. ")
+
 summary_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 summary_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -179,5 +212,8 @@ buttonLFTest.pack(side=tk.LEFT)
 
 buttonRT60 = tk.Button(master=control_frame, text="RT60 Analysis", command=display_rt60_analysis)
 buttonRT60.pack(side=tk.LEFT)
+
+buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
+buttonFiltered.pack(side=tk.LEFT)
 
 tk.mainloop()
