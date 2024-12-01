@@ -134,11 +134,11 @@ def display_filtered_waveforms():
     mid_filtered = analysis.bandpass_filter(audio_data._audio_samples, mid_band[0], mid_band[1], audio_data._sampling_rate)
     high_filtered = analysis.bandpass_filter(audio_data._audio_samples, high_band[0], high_band[1], audio_data._sampling_rate)
 
-    display.waveshow(low_filtered, sr=audio_data._sampling_rate, ax=ax, label="Low freq")
-    display.waveshow(mid_filtered, sr=audio_data._sampling_rate, ax=ax, label="Mid freq")
-    display.waveshow(high_filtered, sr=audio_data._sampling_rate, ax=ax, label="High freq")
+    display.waveshow(high_filtered, sr=audio_data._sampling_rate, ax=ax, label="2000-20000 Hz (High)")
+    display.waveshow(mid_filtered, sr=audio_data._sampling_rate, ax=ax, label="250-2000 Hz (Mid)")
+    display.waveshow(low_filtered, sr=audio_data._sampling_rate, ax=ax, label="20-250 Hz (Low)")
 
-    ax.set_title("Waveform")
+    ax.set_title("Filtered Waveforms")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
     ax.legend(loc="lower right")
