@@ -157,8 +157,18 @@ def display_impulse_response():
     fig.clear()
     ax = fig.add_subplot()
 
+    # Select band
+    low_band = (20, 250)
+    mid_band = (250, 2000)
+    high_band = (2000, 20000)
+
+    # Filter the signal into bands
+    chosen_band = [high_band, mid_band, low_band][sliderRT60Band.get()]
+
+    filtered_samples = analysis.bandpass_filter(audio_data._audio_samples, chosen_band[0], chosen_band[1], audio_data._sampling_rate)
+
     # Create a Room Impulse Response (simplified for this demo)
-    rir = fftconvolve(audio_data._audio_samples, audio_data._audio_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
+    rir = fftconvolve(filtered_samples, filtered_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
     rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow. (calculation so the minimum value is one)
 
     energy = rir[::-1].cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
@@ -177,15 +187,15 @@ def display_impulse_response():
     # Change this to change which graph is displayed
     debugGraph = sliderRT60Debug.get()
 
-    if debugGraph == 1:
+    if debugGraph == 0:
         display.waveshow(rir, sr=audio_data._sampling_rate, ax=ax, label="Reverse impulse response")
-    elif debugGraph == 2:
+    elif debugGraph == 1:
         display.waveshow(energy, sr=audio_data._sampling_rate, ax=ax, label="Energy")
     else:
         display.waveshow(energy_db, sr=audio_data._sampling_rate, ax=ax, label="Energy (decibels)")
 
 
-    ax.set_title("Testing")
+    ax.set_title("Debug Graph (" + ["high", "mid", "low"][sliderRT60Band.get()] + " frequency band)")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
     ax.legend(loc="lower right")
@@ -263,9 +273,23 @@ buttonRT60.pack(side=tk.LEFT)
 buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
 buttonFiltered.pack(side=tk.LEFT)
 
-# These two options should be removed or hidden in the final version
-sliderRT60Debug = tk.Scale(master=control_frame, from_=1, to=3)
+# These 3 options should be removed or hidden in the final version
+
+def updateDebugSliderLabel(nval):
+    sliderRT60Debug.config(label=["RIR", "E", "E(db)"][sliderRT60Debug.get()])
+
+sliderRT60Debug = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateDebugSliderLabel)
 sliderRT60Debug.pack(side=tk.LEFT)
+
+updateDebugSliderLabel(None)
+
+def updateBandSliderLabel(nval):
+    sliderRT60Band.config(label=["High", "Med", "Low"][sliderRT60Band.get()])
+
+sliderRT60Band = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateBandSliderLabel)
+sliderRT60Band.pack(side=tk.LEFT)
+
+updateBandSliderLabel(None)
 
 buttonRT60Debug = tk.Button(master=control_frame, text="RT60 Debug", command=display_impulse_response)
 buttonRT60Debug.pack(side=tk.LEFT)
