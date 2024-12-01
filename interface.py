@@ -11,8 +11,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from analysis import get_rt60_diff
-
 root = tk.Tk()
 root.wm_title("Audio Analysis")
 
@@ -26,14 +24,12 @@ canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 # Variable to store the loaded audio
 audio_data = None
-# Todo: Replace remaining invocations of the below variables
-audio_samples = None
-sampling_rate = None
+
 
 def load_audio_file():
     update_status("Awaiting file. ")
     """Loads an audio file and displays its waveform."""
-    global audio_data, audio_samples, sampling_rate, audio_duration
+    global audio_data
     file_path = filedialog.askopenfilename(
         title="Select Audio File",
         filetypes=(("Audio Files", "*.wav *.mp3"), ("All Files", "*.*")),
@@ -47,15 +43,10 @@ def load_audio_file():
     if success:
         # If successful, display the waveform
         audio_data = data
-        audio_samples = data._audio_samples
-        sampling_rate = data._sampling_rate
-        audio_duration = analysis.get_duration(data, file_path)
-        audio_resonance = analysis.get_resonance(audio_samples, sampling_rate)
-        rt60 = analysis.compute_rt60(audio_samples, sampling_rate)
         display_waveform()
 
         # RT60 difference value is temporary
-        display_summary(audio_duration, audio_resonance, rt60)
+        display_summary()
         update_status("File loaded successfully. ")
     else:
         # Otherwise, show an error message
@@ -64,14 +55,14 @@ def load_audio_file():
 
 def display_waveform():
     """Displays the waveform of the loaded audio."""
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
     # Clear the previous figure and plot the waveform
     fig.clear()
     ax = fig.add_subplot()
-    display.waveshow(audio_samples, sr=sampling_rate, ax=ax)
+    display.waveshow(audio_data._audio_samples, sr=audio_data._sampling_rate, ax=ax)
     ax.set_title("Waveform")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
@@ -79,7 +70,7 @@ def display_waveform():
     update_status("Finished drawing waveform. ")
 
 def display_spectrogram():
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
@@ -101,29 +92,125 @@ def display_spectrogram():
 
 def display_rt60_analysis():
     """Displays RT60 values for different frequency bands."""
-    if audio_samples is None:
+    if audio_data is None:
         messagebox.showwarning("Warning", "No audio file loaded.")
         return
 
-    rt60_values = analysis.compute_rt60(audio_samples, sampling_rate)
+    # Retrieve RT60 for low, mid, and high frequency bands
+    rt60_values = audio_data._rt60
+
+    # Clear the previous figure and set up the bar chart
     fig.clear()
-    ax = fig.add_subplot()
+    ax = fig.add_subplot(1, 1, 1)
     ax.bar(["Low", "Mid", "High"], rt60_values, color=['blue', 'green', 'red'])
     ax.set_title("RT60 Analysis")
     ax.set_xlabel("Frequency Band")
     ax.set_ylabel("RT60 (seconds)")
+    ax.set_ylim(0, max(rt60_values) * 1.2)  # Add some padding to the y-axis
+
+    # Update the canvas to display the new graph
     canvas.draw()
-    update_status("RT60 Analysis Complete")
+    update_status("Finished drawing RT60 graph")
+
+def display_filtered_waveforms():
+    """Displays the waveform of the loaded audio after being run through each filter."""
+    if audio_data is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
+
+    # Clear the previous figure and plot the waveform
+    fig.clear()
+    ax = fig.add_subplot()
+
+    # TODO: This is a hacky implementation and should only be kept as long as it is needed for debugging
+
+    # Define frequency bands (in Hz)
+    low_band = (20, 250)
+    mid_band = (250, 2000)
+    high_band = (2000, 20000)
+
+    # Filter the signal into bands
+    low_filtered = analysis.bandpass_filter(audio_data._audio_samples, low_band[0], low_band[1], audio_data._sampling_rate)
+    mid_filtered = analysis.bandpass_filter(audio_data._audio_samples, mid_band[0], mid_band[1], audio_data._sampling_rate)
+    high_filtered = analysis.bandpass_filter(audio_data._audio_samples, high_band[0], high_band[1], audio_data._sampling_rate)
+
+    display.waveshow(high_filtered, sr=audio_data._sampling_rate, ax=ax, label="2000-20000 Hz (High)")
+    display.waveshow(mid_filtered, sr=audio_data._sampling_rate, ax=ax, label="250-2000 Hz (Mid)")
+    display.waveshow(low_filtered, sr=audio_data._sampling_rate, ax=ax, label="20-250 Hz (Low)")
+
+    ax.set_title("Filtered Waveforms")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend(loc="lower right")
+    canvas.draw()
+    update_status("Finished drawing filtered waveforms. ")
+
+# This option should be removed or hidden in the final program
+def display_impulse_response():
+    if audio_data is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
+    from scipy.signal import fftconvolve
+    import numpy as np
+
+    # Clear the previous figure and plot the waveform
+    fig.clear()
+    ax = fig.add_subplot()
+
+    # Select band
+    low_band = (20, 250)
+    mid_band = (250, 2000)
+    high_band = (2000, 20000)
+
+    # Filter the signal into bands
+    chosen_band = [high_band, mid_band, low_band][sliderRT60Band.get()]
+
+    filtered_samples = analysis.bandpass_filter(audio_data._audio_samples, chosen_band[0], chosen_band[1], audio_data._sampling_rate)
+
+    # Create a Room Impulse Response (simplified for this demo)
+    rir = fftconvolve(filtered_samples, filtered_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
+    rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow. (calculation so the minimum value is one)
+
+    energy = (np.square(rir[::-1])).cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
+    energy = np.maximum(energy, 1e-10)  # Avoid zero values by setting a floor at 1e - 10
+
+    energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))  # Convert energy to dB scale.
+
+    # Find the indices for -5 dB and -65 dB points
+    try:
+        idx_5db = np.where(energy_db <= -5)[0][0]  # Time index where energy drops to -5 dB.
+        idx_65db = np.where(energy_db <= -65)[0][0]  # Time index where energy drops to -65 dB.
+        rt60 = (idx_65db - idx_5db) / audio_data._sampling_rate  # Convert time difference to seconds.
+    except IndexError:
+        rt60 = float('nan')  # If indices are not found, return NaN.
+
+    # Change this to change which graph is displayed
+    debugGraph = sliderRT60Debug.get()
+
+    if debugGraph == 0:
+        display.waveshow(rir, sr=audio_data._sampling_rate, ax=ax, label="Reverse impulse response")
+    elif debugGraph == 1:
+        display.waveshow(energy, sr=audio_data._sampling_rate, ax=ax, label="Energy")
+    else:
+        display.waveshow(energy_db, sr=audio_data._sampling_rate, ax=ax, label="Energy (decibels)")
+
+
+    ax.set_title("Debug Graph (" + ["high", "mid", "low"][sliderRT60Band.get()] + " frequency band)")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend(loc="lower right")
+    canvas.draw()
+    update_status("Finished drawing RT60 test graph. ")
 
 summary_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 summary_frame.pack(side=tk.TOP, fill=tk.X)
 
-summary_text = tk.Label(master=summary_frame, text="Audio must be loaded before summary can be displayed.")
+summary_text = tk.Label(master=summary_frame, text="Summary will display after audio is loaded.")
 summary_text.pack(side=tk.BOTTOM)
 
-def display_summary(duration, resonance, rt60):
+def display_summary():
     # Convert duration to min:sec format
-    sec = duration
+    sec = audio_data._audio_duration
     min = 0
     while sec >= 60:
         min+=1
@@ -133,11 +220,26 @@ def display_summary(duration, resonance, rt60):
     else:
         duration_text = str(min) + ":" + str(round(sec, 3))
 
-    #Calculate rt60 difference
-    rt60_diff = get_rt60_diff(rt60)
+    # Calculate RT60 differences for all three bands
+    rt60_diff = []
+    for value in audio_data._rt60:  # rt60 is a tuple (low_rt60, mid_rt60, high_rt60)
+        if value > 0.5:
+            diff = "+" + str(round(value - 0.5, 2))
+        else:
+            diff = str(round(value - 0.5, 2))  # Explicitly show negative difference
+        rt60_diff.append(diff)
 
-    summary_text.config(text="Duration: " + duration_text + " | Resonance: " + str(round(resonance, 2)) +
-                             " | RT60 Difference vs. .5 Seconds: " + rt60_diff)
+    # Format the differences for display
+    rt60_diff_text = f"Low: {rt60_diff[0]}, Mid: {rt60_diff[1]}, High: {rt60_diff[2]}"
+
+    # Update the summary text
+    summary_text.config(
+        text=(
+            f"Duration: {duration_text} sec | "
+            f"Resonance: {round(audio_data._audio_resonance, 2)} Hz | "
+            f"RT60 Differences vs. 0.5 Seconds: {rt60_diff_text}"
+        )
+    )
 
 status_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 status_frame.pack(side=tk.BOTTOM, fill=tk.X)
@@ -162,10 +264,36 @@ exit_button.pack(side=tk.RIGHT)
 buttonHist = tk.Button(master=control_frame, text="Waveform", command=display_waveform)
 buttonHist.pack(side=tk.LEFT)
 
+buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
+buttonFiltered.pack(side=tk.LEFT)
+
 buttonLFTest = tk.Button(master=control_frame, text="MEL Spectrogram", command=display_spectrogram)
 buttonLFTest.pack(side=tk.LEFT)
 
 buttonRT60 = tk.Button(master=control_frame, text="RT60 Analysis", command=display_rt60_analysis)
 buttonRT60.pack(side=tk.LEFT)
+
+# These 3 options should be removed or hidden in the final version
+showDebug = False
+
+if showDebug:
+    def updateDebugSliderLabel(nval):
+        sliderRT60Debug.config(label=["RIR", "E", "E(db)"][sliderRT60Debug.get()])
+
+    sliderRT60Debug = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateDebugSliderLabel)
+    sliderRT60Debug.pack(side=tk.LEFT)
+
+    updateDebugSliderLabel(None)
+
+    def updateBandSliderLabel(nval):
+        sliderRT60Band.config(label=["High", "Med", "Low"][sliderRT60Band.get()])
+
+    sliderRT60Band = tk.Scale(master=control_frame, from_=0, to=2, showvalue=False, sliderlength=20, command=updateBandSliderLabel)
+    sliderRT60Band.pack(side=tk.LEFT)
+
+    updateBandSliderLabel(None)
+
+    buttonRT60Debug = tk.Button(master=control_frame, text="RT60 Debug", command=display_impulse_response)
+    buttonRT60Debug.pack(side=tk.LEFT)
 
 tk.mainloop()
