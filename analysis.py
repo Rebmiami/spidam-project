@@ -37,11 +37,11 @@ def compute_rt60_band(audio_samples, sampling_rate):
 
     energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))  # Convert energy to dB scale.
 
-    # Find the indices for -5 dB and -35 dB points
+    # Find the indices for -5 dB and -65 dB points
     try:
         idx_5db = np.where(energy_db <= -5)[0][0]  # Time index where energy drops to -5 dB.
-        idx_35db = np.where(energy_db <= -35)[0][0]  # Time index where energy drops to -35 dB.
-        rt60 = (idx_35db - idx_5db) / sampling_rate  # Convert time difference to seconds.
+        idx_65db = np.where(energy_db <= -65)[0][0]  # Time index where energy drops to -65 dB.
+        rt60 = (idx_65db - idx_5db) / sampling_rate  # Convert time difference to seconds.
     except IndexError:
         rt60 = float('nan')  # If indices are not found, return NaN.
 
