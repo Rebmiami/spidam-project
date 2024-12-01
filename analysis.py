@@ -17,29 +17,30 @@ def amplitude_to_db(spec):
 
 def bandpass_filter(data, lowcut, highcut, sampling_rate, order=4):
     """Apply a bandpass filter to the data."""
-    nyquist = 0.5 * sampling_rate
-    low = lowcut / nyquist
-    high = highcut / nyquist
-    b, a = butter(order, [low, high], btype='band')
-    return lfilter(b, a, data)
+    nyquist = 0.5 * sampling_rate  # Nyquist frequency is half the sampling rate.
+    low = lowcut / nyquist  # Normalize low cutoff frequency.
+    high = highcut / nyquist  # Normalize high cutoff frequency.
+    b, a = butter(order, [low, high], btype='band')  # Design a Butterworth bandpass filter.
+    return lfilter(b, a, data)  # Apply the filter to the input signal.
 
 def compute_rt60_band(audio_samples, sampling_rate):
     """Compute RT60 using the Schroeder method for a given band."""
     # Create a Room Impulse Response (simplified for this demo)
-    rir = fftconvolve(audio_samples, audio_samples[::-1], mode='full')
-    rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow
+    rir = fftconvolve(audio_samples, audio_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
+    rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow. (calculation so the minimum value is one)
 
-    energy = rir[::-1].cumsum()[::-1]  # Schroeder's integral
-    energy = np.maximum(energy, 1e-10)  # Avoid zeros to prevent log10 issues
+    energy = rir[::-1].cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
+    energy = np.maximum(energy, 1e-10)  # Avoid zero values by setting a floor at 1e - 10
 
-    energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))
-    # Find the indices for -5 dB and -35 dB (equivalent to -60 dB total)
+    energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))  # Convert energy to dB scale.
+
+    # Find the indices for -5 dB and -35 dB points
     try:
-        idx_5db = np.where(energy_db <= -5)[0][0]
-        idx_35db = np.where(energy_db <= -35)[0][0]
-        rt60 = (idx_35db - idx_5db) / sampling_rate
+        idx_5db = np.where(energy_db <= -5)[0][0]  # Time index where energy drops to -5 dB.
+        idx_35db = np.where(energy_db <= -35)[0][0]  # Time index where energy drops to -35 dB.
+        rt60 = (idx_35db - idx_5db) / sampling_rate  # Convert time difference to seconds.
     except IndexError:
-        rt60 = float('nan')  # If indices are not found, return NaN
+        rt60 = float('nan')  # If indices are not found, return NaN.
 
     return rt60
 
@@ -61,6 +62,7 @@ def compute_rt60(audio_samples, sampling_rate):
     rt60_high = compute_rt60_band(high_filtered, sampling_rate)
 
     return rt60_low, rt60_mid, rt60_high
+
 
 def get_resonance(data, sr):
     frequencies, power = welch(data, sr, nperseg=4096)
