@@ -145,6 +145,53 @@ def display_filtered_waveforms():
     canvas.draw()
     update_status("Finished drawing filtered waveforms. ")
 
+# This option should be removed or hidden in the final program
+def display_impulse_response():
+    if audio_data is None:
+        messagebox.showwarning("Warning", "No audio file loaded.")
+        return
+    from scipy.signal import fftconvolve
+    import numpy as np
+
+    # Clear the previous figure and plot the waveform
+    fig.clear()
+    ax = fig.add_subplot()
+
+    # Create a Room Impulse Response (simplified for this demo)
+    rir = fftconvolve(audio_data._audio_samples, audio_data._audio_samples[::-1], mode='full')  # Autocorrelation of the signal. (calculation of the RIR value)
+    rir = rir / np.max(np.abs(rir))  # Normalize to avoid overflow. (calculation so the minimum value is one)
+
+    energy = rir[::-1].cumsum()[::-1]  # defines the decay curve of the audio using schroeder's method (cumulative sum of the RIR array in reverse)
+    energy = np.maximum(energy, 1e-10)  # Avoid zero values by setting a floor at 1e - 10
+
+    energy_db = 10 * np.log10(np.maximum(energy / np.max(energy), 1e-10))  # Convert energy to dB scale.
+
+    # Find the indices for -5 dB and -35 dB points
+    try:
+        idx_5db = np.where(energy_db <= -5)[0][0]  # Time index where energy drops to -5 dB.
+        idx_35db = np.where(energy_db <= -35)[0][0]  # Time index where energy drops to -35 dB.
+        rt60 = (idx_35db - idx_5db) / audio_data._sampling_rate  # Convert time difference to seconds.
+    except IndexError:
+        rt60 = float('nan')  # If indices are not found, return NaN.
+
+    # Change this to change which graph is displayed
+    debugGraph = sliderRT60Debug.get()
+
+    if debugGraph == 1:
+        display.waveshow(rir, sr=audio_data._sampling_rate, ax=ax, label="Reverse impulse response")
+    elif debugGraph == 2:
+        display.waveshow(energy, sr=audio_data._sampling_rate, ax=ax, label="Energy")
+    else:
+        display.waveshow(energy_db, sr=audio_data._sampling_rate, ax=ax, label="Energy (decibels)")
+
+
+    ax.set_title("Testing")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend(loc="lower right")
+    canvas.draw()
+    update_status("Finished drawing RT60 test graph. ")
+
 summary_frame = tk.Frame(master=root, relief="sunken", borderwidth=1)
 summary_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -215,5 +262,12 @@ buttonRT60.pack(side=tk.LEFT)
 
 buttonFiltered = tk.Button(master=control_frame, text="Filtered Waveforms", command=display_filtered_waveforms)
 buttonFiltered.pack(side=tk.LEFT)
+
+# These two options should be removed or hidden in the final version
+sliderRT60Debug = tk.Scale(master=control_frame, from_=1, to=3)
+sliderRT60Debug.pack(side=tk.LEFT)
+
+buttonRT60Debug = tk.Button(master=control_frame, text="RT60 Debug", command=display_impulse_response)
+buttonRT60Debug.pack(side=tk.LEFT)
 
 tk.mainloop()

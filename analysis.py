@@ -1,7 +1,7 @@
 import librosa
 import audiodata
 import numpy as np
-from scipy.signal import welch, butter, lfilter, fftconvolve
+from scipy.signal import welch, butter, sosfilt, fftconvolve
 
 # Todo: Remove magic numbers
 
@@ -23,8 +23,8 @@ def bandpass_filter(audio_samples, lowcut, highcut, sampling_rate, order=4):
     nyquist = 0.5 * sampling_rate  # Nyquist frequency is half the sampling rate.
     low = lowcut / nyquist  # Normalize low cutoff frequency.
     high = highcut / nyquist  # Normalize high cutoff frequency.
-    b, a = butter(order, [low, high], btype='bandpass')  # Design a Butterworth bandpass filter.
-    return lfilter(b, a, audio_samples)  # Apply the filter to the input signal.
+    sos = butter(order, [low, high], btype='bandpass', output="sos")  # Design a Butterworth bandpass filter.
+    return sosfilt(sos, audio_samples)  # Apply the filter to the input signal.
 
 def compute_rt60_band(audio_samples, sampling_rate):
     """Compute RT60 using the Schroeder method for a given band."""
