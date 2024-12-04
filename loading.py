@@ -4,7 +4,6 @@ import sys
 import librosa
 import soundfile as sf
 from audiodata import *
-import shutil
 
 # Returns 3 values:
 # (bool) Success: Returns true if the file was successfully loaded, false if there was an error
